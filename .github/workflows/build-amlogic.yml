@@ -103,7 +103,7 @@ jobs:
           rm -rf ./lib/modules/*
           cp -r ../modules_tmp/* ./lib/modules
           rm -f ./lib/modules/build ./lib/modules/source
-          chown -R root:root ./lib/modules
+          sudo chown -R root:root ./lib/modules
           find . | cpio -H newc -o | gzip -9 > ../initramfs.tmp
           mkimage -n initramfs-amlogic -A arm -O linux -T ramdisk -C none -d initramfs.tmp initramfs
           echo "status=success" >> ${GITHUB_OUTPUT}

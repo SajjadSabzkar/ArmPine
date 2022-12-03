@@ -64,10 +64,10 @@ jobs:
         env:
           DEBIAN_FRONTEND: noninteractive
         run: |
-          sudo apt update
-          sudo apt full-upgrade -y
-          sudo apt install cpio -y
-          sudo apt clean
+          # sudo apt update
+          # sudo apt full-upgrade -y
+          # sudo apt install cpio -y
+          # sudo apt clean
           sudo timedatectl set-timezone "${TZ}"
           echo "status=success" >> ${GITHUB_OUTPUT}
           
@@ -86,7 +86,7 @@ jobs:
         if: ${{ steps.down.outputs.status }} == 'success' && !cancelled()
         run: |
           mkdir -p bootfs_tmp kernel_tmp modules_tmp dtbs_tmp alpine_tmp
-          tar -zxf bootfs.tmp -C bootfs_tmp
+          unzip bootfs.tmp -d bootfs_tmp
           tar -zxf kernel.tmp -C kernel_tmp
           tar -zxf modules.tmp -C modules_tmp
           tar -zxf alpine.tmp -C alpine_tmp
@@ -102,7 +102,8 @@ jobs:
           rm -rf ./lib/firmware
           rm -rf ./lib/modules/*
           cp -r ../modules_tmp/* ./lib/modules
-          rm -f ./lib/modulesbuild ./lib/modulessource
+          rm -f ./lib/modules/build ./lib/modules/source
+          chown -R root:root ./lib/modules
           find . | cpio -H newc -o | gzip -9 > ../initramfs.tmp
           mkimage -n initramfs-amlogic -A arm -O linux -T ramdisk -C none -d initramfs.tmp initramfs
           echo "status=success" >> ${GITHUB_OUTPUT}
@@ -116,3 +117,9 @@ jobs:
           find ./kernel_tmp -name "vmlinuz*" | head -n 1 | xargs cp -t ./pack
           
           echo "status=success" >> ${GITHUB_OUTPUT}
+          
+      - name: Archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: ArmPine-Amlogic
+          path: /home/runner/work/ArmPine/ArmPine/pack

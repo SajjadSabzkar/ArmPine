@@ -75,6 +75,7 @@ jobs:
         id: down
         if: ${{ steps.init.outputs.status }} == 'success' && !cancelled()
         run: |
+          wget https://github.com/ophub/amlogic-s9xxx-armbian/raw/main/build-armbian/armbian-files/common-files/etc/model_database.conf
           wget ${{ inputs.bootfs_files_url }} -O bootfs.tmp
           wget ${{ inputs.mainline_linux_kernel_url }} -O kernel.tmp
           wget ${{ inputs.kernel_modules_url }} -O modules.tmp
@@ -118,6 +119,10 @@ jobs:
           find ./kernel_tmp -name "vmlinuz*" | head -n 1 | xargs -I {} mv {} ./pack/zImage
           mv ./bootfs_tmp/bootfs/* ./pack
           dtb_list=$(find ./pack/dtb/amlogic -name "*.dtb"); for dtb in ${dtb_list}; do dtc ${dtb} -I dtb -O dts -o ${dtb}.dts; sed -i '0,/dr_mode = ".*";/{s/dr_mode = ".*";/dr_mode = "peripheral";/}' ${dtb}.dts; dtc ${dtb}.dts -I dts -O dtb -o ${dtb}; rm -rf ${dtb}.dts; done
+          board_conf="$(cat ./model_database.conf | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | grep -E "^[^#].*:${board}:yes$" | head -n 1)"
+          FDTFILE="$(echo ${board_conf} | awk -F':' '{print $4}')"
+          sed -i "s|meson.*.dtb|${FDTFILE}|g" ./pack/uEnv.txt
+          sed -i "s|uInitrd|initramfs|g" ./pack/uEnv.txt
           echo "status=success" >> ${GITHUB_OUTPUT}
           
       - name: Archive

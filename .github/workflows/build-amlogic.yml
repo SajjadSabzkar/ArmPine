@@ -6,7 +6,7 @@ on:
       bootfs_files_url:
         description: "Set bootfs files url."
         required: false
-        default: "https://github.com/wxjiyc/amlogic-s9xxx-armbian/raw/main/build-armbian/amlogic-armbian/boot-common.tar.xz"
+        default: "https://github.com/wxjiyc/ArmPine/raw/main/bootfs.zip"
       mainline_linux_kernel_url:
         description: "Set mainline Linux kernel url."
         required: false
@@ -78,7 +78,6 @@ jobs:
           wget ${{ inputs.bootfs_files_url }} -O bootfs.tmp
           wget ${{ inputs.mainline_linux_kernel_url }} -O kernel.tmp
           wget ${{ inputs.kernel_modules_url }} -O modules.tmp
-          wget ${{ inputs.dtbs_url }} -O dtbs.tmp
           wget ${{ inputs.alpine_linux_url }} -O alpine.tmp
           echo "status=success" >> ${GITHUB_OUTPUT}
           
@@ -90,7 +89,6 @@ jobs:
           tar -zxf bootfs.tmp -C bootfs_tmp
           tar -zxf kernel.tmp -C kernel_tmp
           tar -zxf modules.tmp -C modules_tmp
-          tar -zxf dtbs.tmp -C dtbs_tmp
           tar -zxf alpine.tmp -C alpine_tmp
           echo "status=success" >> ${GITHUB_OUTPUT}
           

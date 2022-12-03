@@ -73,7 +73,7 @@ jobs:
           
       - name: Download files
         id: down
-        if: ${{ steps.init.outputs.status }} == 'success' && !cancelled()
+        if: ${{ steps.init.outputs.status }} == "success" && !cancelled()
         run: |
           wget https://github.com/ophub/amlogic-s9xxx-armbian/raw/main/build-armbian/armbian-files/common-files/etc/model_database.conf
           wget ${{ inputs.bootfs_files_url }} -O bootfs.tmp
@@ -84,7 +84,7 @@ jobs:
           
       - name: Extract files
         id: extract
-        if: ${{ steps.down.outputs.status }} == 'success' && !cancelled()
+        if: ${{ steps.down.outputs.status }} == "success" && !cancelled()
         run: |
           mkdir -p bootfs_tmp kernel_tmp modules_tmp dtbs_tmp alpine_tmp
           unzip -q -d bootfs_tmp bootfs.tmp
@@ -95,34 +95,38 @@ jobs:
           
       - name: Rebuild Alpine Linux
         id: rebuild
-        if: ${{ steps.extract.outputs.status }} == 'success' && !cancelled()
+        if: ${{ steps.extract.outputs.status }} == "success" && !cancelled()
         run: |
+          # build initramfs
           mkdir -p build_tmp
           cd ./build_tmp
           find ../alpine_tmp -name "initramfs*" | head -n 1 | xargs gunzip -c | cpio -i
           rm -rf ./lib/firmware
           rm -rf ./lib/modules/*
+          rm -f ../modules_tmp/*/build
+          rm -f ../modules_tmp/*/source
           mv ../modules_tmp/* ./lib/modules
-          rm -f ./lib/modules/build ./lib/modules/source
           sudo chown -R root:root ./lib/modules
           find . | cpio -H newc -o | gzip -9 > ../initramfs.tmp
           cd ..
           mkimage -n initramfs-amlogic -A arm -O linux -T ramdisk -C none -d initramfs.tmp initramfs
+          # mod bootfs files
+          dtb_list=$(find ./bootfs_tmp/bootfs/dtb/amlogic -name "*.dtb"); for dtb in ${dtb_list}; do dtc ${dtb} -I dtb -O dts -o ${dtb}.dts; sed -i '0,/dr_mode = ".*";/{s/dr_mode = ".*";/dr_mode = "peripheral";/}' ${dtb}.dts; dtc ${dtb}.dts -I dts -O dtb -o ${dtb}; rm -rf ${dtb}.dts; done
+          board_conf="$(cat ./model_database.conf | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | grep -E "^[^#].*:${{ inputs.board }}:yes$" | head -n 1)"
+          FDTFILE="$(echo ${board_conf} | awk -F':' '{print $4}')"
+          sed -i "s|meson.*.dtb|${FDTFILE}|g" ./bootfs_tmp/bootfs/uEnv.txt
+          sed -i "s|uInitrd|initramfs|g" ./bootfs_tmp/bootfs/uEnv.txt
+          sed -i "s|APPEND=.*$|APPEND=modloop=/modloop console=ttyAML0,115200n8 console=tty0 no_console_suspend consoleblank=0 fsck.fix=yes fsck.repair=yes net.ifnames=0 cgroup_enable=cpuset cgroup_memory=1 cgroup_enable=memory|" ./bootfs_tmp/bootfs/uEnv.txt
           echo "status=success" >> ${GITHUB_OUTPUT}
           
       - name: Pack images
         id: pack
-        if: ${{ steps.rebuild.outputs.status }} == 'success' && !cancelled()
+        if: ${{ steps.rebuild.outputs.status }} == "success" && !cancelled()
         run: |
           mkdir -p pack
           mv ./initramfs ./pack
           find ./kernel_tmp -name "vmlinuz*" | head -n 1 | xargs -I {} mv {} ./pack/zImage
           mv ./bootfs_tmp/bootfs/* ./pack
-          dtb_list=$(find ./pack/dtb/amlogic -name "*.dtb"); for dtb in ${dtb_list}; do dtc ${dtb} -I dtb -O dts -o ${dtb}.dts; sed -i '0,/dr_mode = ".*";/{s/dr_mode = ".*";/dr_mode = "peripheral";/}' ${dtb}.dts; dtc ${dtb}.dts -I dts -O dtb -o ${dtb}; rm -rf ${dtb}.dts; done
-          board_conf="$(cat ./model_database.conf | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | grep -E "^[^#].*:${{ inputs.board }}:yes$" | head -n 1)"
-          FDTFILE="$(echo ${board_conf} | awk -F':' '{print $4}')"
-          sed -i "s|meson.*.dtb|${FDTFILE}|g" ./pack/uEnv.txt
-          sed -i "s|uInitrd|initramfs|g" ./pack/uEnv.txt
           echo "status=success" >> ${GITHUB_OUTPUT}
           
       - name: Archive

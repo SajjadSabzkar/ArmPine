@@ -10,11 +10,11 @@ on:
       mainline_linux_kernel_url:
         description: "Set mainline Linux kernel url."
         required: false
-        default: "https://github.com/ophub/kernel/raw/main/pub/stable/6.0.10/boot-6.0.10-flippy-79%2B.tar.gz"
+        default: "https://github.com/ophub/kernel/raw/main/pub/stable/5.15.80/boot-5.15.80-flippy-79%2Bo.tar.gz"
       kernel_modules_url:
         description: "Set kernel modules url."
         required: false
-        default: "https://github.com/ophub/kernel/raw/main/pub/stable/6.0.10/modules-6.0.10-flippy-79%2B.tar.gz"      
+        default: "https://github.com/ophub/kernel/raw/main/pub/stable/5.15.80/modules-5.15.80-flippy-79%2Bo.tar.gz"      
       dtbs_url:
         description: "Set dtbs url."
         required: false

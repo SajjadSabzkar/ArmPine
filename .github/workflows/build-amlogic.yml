@@ -98,7 +98,7 @@ jobs:
         run: |
           mkdir -p build_tmp
           cd ./build_tmp
-          find ../alpine_tmp -name "initramfs*" | head -n 1 | gunzip -c | cpio -i
+          find ../alpine_tmp -name "initramfs*" | head -n 1 | xargs gunzip -c | cpio -i
           rm -rf ./lib/firmware
           rm -rf ./lib/modules/*
           cp -r ../modules_tmp/* ./lib/modules

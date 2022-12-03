@@ -106,7 +106,7 @@ jobs:
           rm -f ../modules_tmp/*/build
           rm -f ../modules_tmp/*/source
           mv ../modules_tmp/* ./lib/modules
-          sudo chown -R root:root ./lib/modules
+          sudo chown -R root:root ./
           find . | cpio -H newc -o | gzip -9 > ../initramfs.tmp
           cd ..
           mkimage -n initramfs-amlogic -A arm -O linux -T ramdisk -C none -d initramfs.tmp initramfs

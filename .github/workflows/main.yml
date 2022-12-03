@@ -1,0 +1,132 @@
+name: Build Alpine Linux for Amlogic S9xxxx SoCs Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      bootfs_files_url:
+        description: "Set bootfs files url."
+        required: false
+        default: "https://github.com/wxjiyc/ArmPine/raw/main/bootfs.zip"
+      mainline_linux_kernel_url:
+        description: "Set mainline Linux kernel url."
+        required: false
+        default: "https://github.com/ophub/kernel/raw/main/pub/stable/6.0.10/boot-6.0.10-flippy-79%2B.tar.gz"
+      kernel_modules_url:
+        description: "Set kernel modules url."
+        required: false
+        default: "https://github.com/ophub/kernel/raw/main/pub/stable/6.0.10/modules-6.0.10-flippy-79%2B.tar.gz"      
+      dtbs_url:
+        description: "Set dtbs url."
+        required: false
+        default: "https://github.com/ophub/kernel/raw/main/pub/stable/6.0.10/dtb-amlogic-6.0.10-flippy-79%2B.tar.gz"
+      alpine_linux_url:
+        description: "Set Alpine Linux url."
+        required: false
+        default: "https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/aarch64/alpine-uboot-3.17.0-aarch64.tar.gz"
+     board:
+        description: "Select Amlogic SoC."
+        required: false
+        default: "s905w"
+        type: choice
+        options:
+          - all
+          - a311d
+          - s922x
+          - s922x-n2
+          - s922x-reva
+          - s905x3
+          - s905x3-b
+          - s905x2
+          - s905x2-km3
+          - s912
+          - s912-m8s
+          - s905d
+          - s905d-ki
+          - s905x
+          - s905w
+          - s905
+          - s905l3a
+          - s905l2
+
+env:
+  TZ: America/New_York
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        
+      - name: Initialization environment
+        id: init
+        env:
+          DEBIAN_FRONTEND: noninteractive
+        run: |
+          sudo apt update
+          # sudo apt full-upgrade -y
+          sudo apt install u-boot-tools -y
+          sudo apt clean
+          sudo timedatectl set-timezone "${TZ}"
+          echo "status=success" >> ${GITHUB_OUTPUT}
+          
+      - name: Download files
+        id: down
+        if: ${{ steps.init.outputs.status }} == 'success' && !cancelled()
+        run: |
+          wget https://github.com/ophub/amlogic-s9xxx-armbian/raw/main/build-armbian/armbian-files/common-files/etc/model_database.conf
+          wget ${{ inputs.bootfs_files_url }} -O bootfs.tmp
+          wget ${{ inputs.mainline_linux_kernel_url }} -O kernel.tmp
+          wget ${{ inputs.kernel_modules_url }} -O modules.tmp
+          wget ${{ inputs.alpine_linux_url }} -O alpine.tmp
+          echo "status=success" >> ${GITHUB_OUTPUT}
+          
+      - name: Extract files
+        id: extract
+        if: ${{ steps.down.outputs.status }} == 'success' && !cancelled()
+        run: |
+          mkdir -p bootfs_tmp kernel_tmp modules_tmp dtbs_tmp alpine_tmp
+          unzip -q -d bootfs_tmp bootfs.tmp
+          tar -zxf kernel.tmp -C kernel_tmp
+          tar -zxf modules.tmp -C modules_tmp
+          tar -zxf alpine.tmp -C alpine_tmp
+          echo "status=success" >> ${GITHUB_OUTPUT}
+          
+      - name: Rebuild Alpine Linux
+        id: rebuild
+        if: ${{ steps.extract.outputs.status }} == 'success' && !cancelled()
+        run: |
+          mkdir -p build_tmp
+          cd ./build_tmp
+          find ../alpine_tmp -name "initramfs*" | head -n 1 | xargs gunzip -c | cpio -i
+          rm -rf ./lib/firmware
+          rm -rf ./lib/modules/*
+          mv ../modules_tmp/* ./lib/modules
+          rm -f ./lib/modules/build ./lib/modules/source
+          sudo chown -R root:root ./lib/modules
+          find . | cpio -H newc -o | gzip -9 > ../initramfs.tmp
+          cd ..
+          mkimage -n initramfs-amlogic -A arm -O linux -T ramdisk -C none -d initramfs.tmp initramfs
+          echo "status=success" >> ${GITHUB_OUTPUT}
+          
+      - name: Pack images
+        id: pack
+        if: ${{ steps.rebuild.outputs.status }} == 'success' && !cancelled()
+        run: |
+          mkdir -p pack
+          mv ./initramfs ./pack
+          find ./kernel_tmp -name "vmlinuz*" | head -n 1 | xargs -I {} mv {} ./pack/zImage
+          mv ./bootfs_tmp/bootfs/* ./pack
+          dtb_list=$(find ./pack/dtb/amlogic -name "*.dtb"); for dtb in ${dtb_list}; do dtc ${dtb} -I dtb -O dts -o ${dtb}.dts; sed -i '0,/dr_mode = ".*";/{s/dr_mode = ".*";/dr_mode = "peripheral";/}' ${dtb}.dts; dtc ${dtb}.dts -I dts -O dtb -o ${dtb}; rm -rf ${dtb}.dts; done
+          board_conf="$(cat ./model_database.conf | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | grep -E "^[^#].*:${{ inputs.board }}:yes$" | head -n 1)"
+          FDTFILE="$(echo ${board_conf} | awk -F':' '{print $4}')"
+          sed -i "s|meson.*.dtb|${FDTFILE}|g" ./pack/uEnv.txt
+          sed -i "s|uInitrd|initramfs|g" ./pack/uEnv.txt
+          echo "status=success" >> ${GITHUB_OUTPUT}
+          
+      - name: Archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: ArmPine-Amlogic
+          path: /home/runner/work/ArmPine/ArmPine/pack

@@ -23,7 +23,7 @@ on:
         description: "Set Alpine Linux url."
         required: false
         default: "https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/aarch64/alpine-uboot-3.17.0-aarch64.tar.gz"
-      armbian_board:
+     board:
         description: "Select Amlogic SoC."
         required: false
         default: "s905w"
@@ -119,7 +119,7 @@ jobs:
           find ./kernel_tmp -name "vmlinuz*" | head -n 1 | xargs -I {} mv {} ./pack/zImage
           mv ./bootfs_tmp/bootfs/* ./pack
           dtb_list=$(find ./pack/dtb/amlogic -name "*.dtb"); for dtb in ${dtb_list}; do dtc ${dtb} -I dtb -O dts -o ${dtb}.dts; sed -i '0,/dr_mode = ".*";/{s/dr_mode = ".*";/dr_mode = "peripheral";/}' ${dtb}.dts; dtc ${dtb}.dts -I dts -O dtb -o ${dtb}; rm -rf ${dtb}.dts; done
-          board_conf="$(cat ./model_database.conf | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | grep -E "^[^#].*:${board}:yes$" | head -n 1)"
+          board_conf="$(cat ./model_database.conf | sed -e 's/NA//g' -e 's/NULL//g' -e 's/[ ][ ]*//g' | grep -E "^[^#].*:${{ inputs.board }}:yes$" | head -n 1)"
           FDTFILE="$(echo ${board_conf} | awk -F':' '{print $4}')"
           sed -i "s|meson.*.dtb|${FDTFILE}|g" ./pack/uEnv.txt
           sed -i "s|uInitrd|initramfs|g" ./pack/uEnv.txt

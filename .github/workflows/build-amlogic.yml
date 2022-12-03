@@ -86,7 +86,7 @@ jobs:
         if: ${{ steps.down.outputs.status }} == 'success' && !cancelled()
         run: |
           mkdir -p bootfs_tmp kernel_tmp modules_tmp dtbs_tmp alpine_tmp
-          unzip bootfs.tmp -d bootfs_tmp
+          unzip bootfs.tmp -q -d bootfs_tmp
           tar -zxf kernel.tmp -C kernel_tmp
           tar -zxf modules.tmp -C modules_tmp
           tar -zxf alpine.tmp -C alpine_tmp

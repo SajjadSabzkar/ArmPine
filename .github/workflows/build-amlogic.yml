@@ -1,7 +1,6 @@
 name: Build Alpine Linux for Amlogic S9xxxx SoCs
 
 on:
-  repository_dispatch:
   workflow_dispatch:
     inputs:
       mainline_linux_kernel_url:

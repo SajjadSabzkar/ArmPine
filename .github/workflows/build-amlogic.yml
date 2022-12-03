@@ -101,7 +101,7 @@ jobs:
           find ../alpine_tmp -name "initramfs*" | head -n 1 | xargs gunzip -c | cpio -i
           rm -rf ./lib/firmware
           rm -rf ./lib/modules/*
-          cp -r ../modules_tmp/* ./lib/modules
+          mv ../modules_tmp/* ./lib/modules
           rm -f ./lib/modules/build ./lib/modules/source
           sudo chown -R root:root ./lib/modules
           find . | cpio -H newc -o | gzip -9 > ../initramfs.tmp
@@ -114,9 +114,9 @@ jobs:
         if: ${{ steps.rebuild.outputs.status }} == 'success' && !cancelled()
         run: |
           mkdir -p pack
-          cp ./initramfs ./pack
-          find ./kernel_tmp -name "vmlinuz*" | head -n 1 | xargs cp -t ./pack/zImage
-          cp -r ./bootfs_tmp/bootfs/* ./pack
+          mv ./initramfs ./pack
+          find ./kernel_tmp -name "vmlinuz*" | head -n 1 | xargs -I {} mv {} ./pack/zImage
+          mv ./bootfs_tmp/bootfs/* ./pack
           dtb_list=$(find ./pack/dtb/amlogic -name "*.dtb"); for dtb in ${dtb_list}; do dtc ${dtb} -I dtb -O dts -o ${dtb}.dts; sed -i '0,/dr_mode = ".*";/{s/dr_mode = ".*";/dr_mode = "peripheral";/}' ${dtb}.dts; dtc ${dtb}.dts -I dts -O dtb -o ${dtb}; rm -rf ${dtb}.dts; done
           echo "status=success" >> ${GITHUB_OUTPUT}
           

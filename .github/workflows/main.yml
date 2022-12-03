@@ -1,7 +1,6 @@
 name: Build Alpine Linux for Amlogic S9xxxx SoCs
 
 on:
-  repository_dispatch:
   workflow_dispatch:
     inputs:
       bootfs_files_url:
@@ -24,7 +23,7 @@ on:
         description: "Set Alpine Linux url."
         required: false
         default: "https://dl-cdn.alpinelinux.org/alpine/v3.17/releases/aarch64/alpine-uboot-3.17.0-aarch64.tar.gz"
-     board:
+      board:
         description: "Select Amlogic SoC."
         required: false
         default: "s905w"

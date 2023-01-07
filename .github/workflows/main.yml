@@ -139,6 +139,5 @@ jobs:
         uses: ncipollo/release-action@main
         if: ${{ steps.compile.outputs.status }} == 'success' && !cancelled()
         with:
-          tag: ${{ steps.compile.outputs.build_tag }}
           artifacts: /home/runner/work/ArmPine/ArmPine/pack
           allowUpdates: true

@@ -138,6 +138,6 @@ jobs:
       - name: Upload ArmPine image to Release
         uses: ncipollo/release-action@main
         with:
-          tag:  ${{ steps.pack.outputs.build_tag }}
+          tag:  'upload'
           artifacts: ${{ env.PACKAGED_OUTPUTPATH }}/*
           allowUpdates: true

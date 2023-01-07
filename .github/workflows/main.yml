@@ -136,9 +136,10 @@ jobs:
           path: /home/runner/work/ArmPine/ArmPine/pack
 
       - name: Upload ArmPine image to Release
-        if: ${{ startsWith(github.ref, 'refs/tags/') }}
-        uses: ncipollo/release-action@main
-        with:
-          tag:  'upload'
-          artifacts: ${{ env.PACKAGED_OUTPUTPATH }}/*
-          allowUpdates: true
+         permissions: 
+            contents: write
+         steps:
+         - uses: actions/checkout@v2
+         - uses: ncipollo/release-action@v1
+         with:
+              artifacts: ${{ env.PACKAGED_OUTPUTPATH }}/*

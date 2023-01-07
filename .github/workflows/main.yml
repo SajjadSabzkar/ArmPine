@@ -137,7 +137,6 @@ jobs:
 
       - name: Upload ArmPine image to Release
         uses: ncipollo/release-action@main
-        if: ${{ steps.compile.outputs.status }} == 'success' && !cancelled()
         with:
-          artifacts: /home/runner/work/ArmPine/ArmPine/pack
+          artifacts: /home/runner/work/ArmPine/ArmPine/pack/*
           allowUpdates: true

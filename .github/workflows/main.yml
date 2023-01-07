@@ -138,5 +138,5 @@ jobs:
       - name: Upload ArmPine image to Release
         uses: ncipollo/release-action@main
         with:
-          artifacts: /home/runner/work/ArmPine/ArmPine/pack/*
+          artifacts: ${{ env.PACKAGED_OUTPUTPATH }}/*
           allowUpdates: true
